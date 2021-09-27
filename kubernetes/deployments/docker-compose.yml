@@ -1,0 +1,46 @@
+version: '2'
+services:
+  database:
+    image: 'postgres:13.1-alpine'             # image téléchargé du Dockerhub
+    container_name: database
+    environment:     # variables d'environnement permettant l'accès à la base
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=0000
+      - POSTGRES_DB=TalanAppStore
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:             # nécessite un volume pour la persistence de données
+      - pgdata:/var/lib/postgresql/data   
+
+  backend:
+    build: backend       # nom du répertoire comportant le fichier Dockerfile
+    container_name: springboot-container
+    ports: 
+      - "8080:8080"                        # port-hôte-machine:port-conteneur
+    restart: always
+    depends_on:    # doit être lancé aprés le lancement du conteneur database
+      - database     
+    volumes:     
+      - /var/lib/data:/var/lib/data  
+    environment:     # variables d'environnement permettant l'accès à la base
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/TalanAppStore
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update   
+  frontend:
+    build: frontend
+    ports: 
+      - "80:80"
+    depends_on: 
+      - backend     # doit être lancé aprés le lancement du conteneur backend
+  flask:
+    build: flask
+    ports:
+      - "5000:5000"  
+    hostname: apiflask # accessible par les autres conteneurs via ce hostname
+    volumes:
+      - /var/lib/data:/var/lib/data         # même volume que l'image backend
+
+volumes:
+    pgdata:                               # partagé entre tous les conteneurs
+
+
+
+
